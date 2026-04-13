@@ -80,6 +80,13 @@ func (g *gzipWriter) Write(data []byte) (int, error) {
 		contentLen, err := strconv.Atoi(g.Header().Get("Content-Length"))
 		if err == nil {
 			if contentLen < g.minLength {
+				/*
+					Richelieu:
+					（1）必须在这里加，趁头部还没发送
+					（2）走 Content-Length 快速路径时，应该在调用底层 writer 之前就移除头部，而不是依赖 defer
+				*/
+				g.removeGzipHeaders()
+
 				return g.ResponseWriter.Write(data)
 			}
 			g.shouldCompress = true
